@@ -258,3 +258,89 @@ async def api_rotate(
 ):
     workspace = create_workspace()
     try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}_rotated.pdf"
+        pdf_core.rotate_pdf(input_path, angle, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}_rotated.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/protect")
+async def api_protect(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    password: str = Form(...),
+):
+    workspace = create_workspace()
+    try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}_protected.pdf"
+        pdf_core.protect_pdf(input_path, password, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}_protected.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/unlock")
+async def api_unlock(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    password: str = Form(""),
+):
+    workspace = create_workspace()
+    try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}_unlocked.pdf"
+        pdf_core.unlock_pdf(input_path, password, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}_unlocked.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/watermark")
+async def api_watermark(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    text: str = Form(...),
+):
+    workspace = create_workspace()
+    try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}_watermarked.pdf"
+        pdf_core.add_watermark(input_path, text, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}_watermarked.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
