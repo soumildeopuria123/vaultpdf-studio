@@ -45,3 +45,38 @@ def _parse_page_ranges(range_str: str, max_pages: int) -> list[list[int]]:
             )
         groups.append(list(range(start - 1, end)))
     return groups
+
+
+def split_pdf(file_path, page_ranges, output_zip_path):
+    """Parse range strings and bundle extracted PDFs into a ZIP archive."""
+    file_path = Path(file_path)
+    output_zip_path = Path(output_zip_path)
+    with fitz.open(file_path) as src:
+        groups = _parse_page_ranges(page_ranges, src.page_count)
+        with zipfile.ZipFile(output_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for idx, pages in enumerate(groups, start=1):
+                part = fitz.open()
+                try:
+                    for p in pages:
+                        part.insert_pdf(src, from_page=p, to_page=p)
+                    buf = io.BytesIO()
+                    part.save(buf)
+                    data = buf.getvalue()
+                finally:
+                    part.close()
+                start_p = pages[0] + 1
+                end_p = pages[-1] + 1
+                name = (
+                    f"{file_path.stem}_pages_{start_p}.pdf"
+                    if start_p == end_p
+                    else f"{file_path.stem}_pages_{start_p}-{end_p}.pdf"
+                )
+                # Avoid duplicate names if same range repeated
+                if name in zf.namelist():
+                    name = f"{file_path.stem}_part_{idx}_pages_{start_p}-{end_p}.pdf"
+                zf.writestr(name, data)
+    return output_zip_path
+
+
+def rotate_pdf(file_path, angle, output_path):
+    """Rotate all pages by 90, 180, or 270 degrees."""
