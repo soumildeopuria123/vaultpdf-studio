@@ -68,3 +68,36 @@ def pdf_to_images_zip(pdf_path, output_zip_path, fmt="png", dpi=150):
             for i, page in enumerate(doc, start=1):
                 pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB, alpha=False)
                 if pil_fmt == "JPEG":
+                    img = Image.frombytes("RGB", [pix.width, pix.height], pix.samples)
+                    buf = io.BytesIO()
+                    img.save(buf, format="JPEG", quality=95, optimize=True)
+                    data = buf.getvalue()
+                else:
+                    data = pix.tobytes("png")
+                zf.writestr(f"{pdf_path.stem}_page_{i:03d}.{ext}", data)
+    return output_zip_path
+
+
+def images_to_pdf(image_paths, output_path):
+    """Bundle multiple JPG/PNG images into a single cleanly sized PDF."""
+    if not image_paths:
+        raise ValueError("No images provided.")
+    doc = fitz.open()
+    try:
+        for img_path in image_paths:
+            img_path = Path(img_path)
+            with Image.open(img_path) as im:
+                # Normalize mode and get dimensions in pixels
+                if im.mode in ("RGBA", "P", "LA"):
+                    im = im.convert("RGB")
+                elif im.mode not in ("RGB", "L"):
+                    im = im.convert("RGB")
+                w_px, h_px = im.size
+                # Use pixels as points for a clean 1:1 sized page
+                page = doc.new_page(width=float(w_px), height=float(h_px))
+                rect = fitz.Rect(0, 0, w_px, h_px)
+                page.insert_image(rect, filename=str(img_path))
+        doc.save(output_path)
+    finally:
+        doc.close()
+    return output_path
