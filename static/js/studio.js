@@ -498,3 +498,61 @@
 
   // Tool selection
   toolGrid.addEventListener('click', (e) => {
+    const btn = e.target.closest('.tool-card');
+    if (!btn) return;
+    const tool = btn.dataset.tool;
+    if (!tool || !TOOLS[tool]) return;
+    state.tool = tool;
+    state.files = [];
+    document.querySelectorAll('.tool-card').forEach(el => el.classList.toggle('active', el === btn));
+    setBanner('', '');
+    renderTool();
+    if (state.redact) state.redact.reset();
+  });
+
+  // Drop zone
+  dropZone.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    const cfg = TOOLS[state.tool];
+    if (cfg.multiple && (state.tool === 'merge' || ($('#img_mode') && $('#img_mode').value === 'images-to-pdf'))) {
+      addFiles(e.target.files);
+    } else {
+      setFiles(e.target.files);
+    }
+    fileInput.value = '';
+  });
+  ['dragenter', 'dragover'].forEach(ev => dropZone.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation(); dropZone.classList.add('dragover');
+  }));
+  ['dragleave', 'drop'].forEach(ev => dropZone.addEventListener(ev, (e) => {
+    e.preventDefault(); e.stopPropagation(); dropZone.classList.remove('dragover');
+  }));
+  dropZone.addEventListener('drop', (e) => {
+    const cfg = TOOLS[state.tool];
+    const files = e.dataTransfer.files;
+    if (cfg.multiple && (state.tool === 'merge' || ($('#img_mode') && $('#img_mode').value === 'images-to-pdf'))) {
+      addFiles(files);
+    } else {
+      setFiles(files);
+    }
+  });
+
+  // Redact toolbar
+  $('#redact-prev').addEventListener('click', async () => {
+    if (!state.redact) return;
+    try { setLoading(true, 'Loading page…'); await state.redact.prevPage(); }
+    catch (e) { setBanner('error', e.message); }
+    finally { setLoading(false); }
+  });
+  $('#redact-next').addEventListener('click', async () => {
+    if (!state.redact) return;
+    try { setLoading(true, 'Loading page…'); await state.redact.nextPage(); }
+    catch (e) { setBanner('error', e.message); }
+    finally { setLoading(false); }
+  });
+  $('#redact-clear-page').addEventListener('click', () => { if (state.redact) state.redact.clearPageBoxes(); });
+  $('#redact-clear-all').addEventListener('click', () => { if (state.redact) state.redact.clearAllBoxes(); });
+
+  // Initial render
+  renderTool();
+})();
