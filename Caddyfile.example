@@ -1,0 +1,14 @@
+# Replace pdf.example.com with your domain (must have an A/AAAA record pointing to this server's IP).
+# Caddy will automatically obtain and renew HTTPS certificates via Let's Encrypt.
+# Ensure ports 80 and 443 are open in your firewall/security group.
+
+pdf.example.com {
+    encode gzip zstd
+    reverse_proxy app:8000
+
+    header {
+        X-Content-Type-Options nosniff
+        X-Frame-Options SAMEORIGIN
+        Referrer-Policy strict-origin-when-cross-origin
+    }
+}
