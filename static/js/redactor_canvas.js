@@ -148,3 +148,72 @@
         this.boxes.push({ page: this.pageIndex, ...box });
       }
       this.render();
+    }
+
+    cancelDraw() {
+      this.drawing = false;
+      this.start = null; this.current = null;
+      this.render();
+    }
+
+    normalizeBox(a, b) {
+      if (!a || !b || !this.canvas.width || !this.canvas.height) return null;
+      let x0 = Math.min(a.x, b.x);
+      let y0 = Math.min(a.y, b.y);
+      let x1 = Math.max(a.x, b.x);
+      let y1 = Math.max(a.y, b.y);
+      // clamp
+      x0 = Math.max(0, Math.min(this.canvas.width, x0));
+      y0 = Math.max(0, Math.min(this.canvas.height, y0));
+      x1 = Math.max(0, Math.min(this.canvas.width, x1));
+      y1 = Math.max(0, Math.min(this.canvas.height, y1));
+      // ignore tiny drags
+      if (Math.abs(x1 - x0) < 3 || Math.abs(y1 - y0) < 3) return null;
+      return {
+        x0: x0 / this.canvas.width,
+        y0: y0 / this.canvas.height,
+        x1: x1 / this.canvas.width,
+        y1: y1 / this.canvas.height,
+      };
+    }
+
+    drawRect(a, b, active = false) {
+      if (!a || !b) return;
+      const x = Math.min(a.x, b.x);
+      const y = Math.min(a.y, b.y);
+      const w = Math.abs(a.x - b.x);
+      const h = Math.abs(a.y - b.y);
+      const ctx = this.ctx;
+      ctx.save();
+      ctx.fillStyle = active ? 'rgba(255, 107, 107, 0.45)' : 'rgba(17, 17, 17, 0.55)';
+      ctx.strokeStyle = '#111111';
+      ctx.lineWidth = 2;
+      ctx.fillRect(x, y, w, h);
+      ctx.strokeRect(x, y, w, h);
+      ctx.restore();
+    }
+
+    render() {
+      const ctx = this.ctx;
+      ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+      if (this.pageImage && this.canvas.width) {
+        ctx.drawImage(this.pageImage, 0, 0, this.canvas.width, this.canvas.height);
+      }
+      // draw saved boxes for current page
+      const pageBoxes = this.boxes.filter(b => b.page === this.pageIndex);
+      for (const b of pageBoxes) {
+        const a = { x: b.x0 * this.canvas.width, y: b.y0 * this.canvas.height };
+        const c = { x: b.x1 * this.canvas.width, y: b.y1 * this.canvas.height };
+        this.drawRect(a, c, false);
+      }
+    }
+
+    async prevPage() { if (this.pageIndex > 0) await this.loadPage(this.pageIndex - 1); }
+    async nextPage() { if (this.pageIndex < this.pageCount - 1) await this.loadPage(this.pageIndex + 1); }
+    clearPageBoxes() { this.boxes = this.boxes.filter(b => b.page !== this.pageIndex); this.render(); }
+    clearAllBoxes() { this.boxes = []; this.render(); }
+    getBoxes() { return this.boxes.slice(); }
+  }
+
+  window.RedactorCanvas = RedactorCanvas;
+})();
