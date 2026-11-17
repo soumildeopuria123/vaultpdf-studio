@@ -28,3 +28,28 @@ def cleanup_workspace(workspace: Path) -> None:
 
 
 def schedule_cleanup(background_tasks: BackgroundTasks, workspace: Path) -> None:
+    """Register workspace cleanup as a FastAPI background task."""
+    background_tasks.add_task(cleanup_workspace, workspace)
+
+
+def save_upload(upload, destination: Path) -> Path:
+    """Save a FastAPI UploadFile/Starlette UploadFile to destination."""
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    with destination.open("wb") as f:
+        shutil.copyfileobj(upload.file, f)
+    try:
+        upload.file.close()
+    except Exception:
+        pass
+    return destination
+
+
+def save_uploads(uploads: Iterable, workspace: Path, prefix: str = "file") -> list[Path]:
+    """Save multiple uploads into workspace, preserving order."""
+    paths: list[Path] = []
+    for idx, upload in enumerate(uploads):
+        original = Path(getattr(upload, "filename", None) or f"{prefix}_{idx}")
+        safe_name = original.name.replace("/", "_").replace("\\", "_") or f"{prefix}_{idx}"
+        dest = workspace / f"{idx:03d}_{safe_name}"
+        paths.append(save_upload(upload, dest))
+    return paths
