@@ -48,3 +48,28 @@ def redact_regions(input_path, output_path, boxes):
             # Clamp normalized coords
             x0 = max(0.0, min(1.0, x0))
             y0 = max(0.0, min(1.0, y0))
+            x1 = max(0.0, min(1.0, x1))
+            y1 = max(0.0, min(1.0, y1))
+            if x1 <= x0 or y1 <= y0:
+                continue  # skip empty/invalid boxes
+            by_page.setdefault(page_idx, []).append(
+                {"x0": x0, "y0": y0, "x1": x1, "y1": y1}
+            )
+
+        for page_idx, page_boxes in by_page.items():
+            page = doc[page_idx]
+            rect = page.rect
+            w, h = rect.width, rect.height
+            for b in page_boxes:
+                r = fitz.Rect(b["x0"] * w, b["y0"] * h, b["x1"] * w, b["y1"] * h)
+                # Intersect with page bounds
+                r = r & rect
+                if r.is_empty:
+                    continue
+                page.add_redact_annot(r, fill=(0, 0, 0))
+            # Permanently remove underlying text and image data
+            page.apply_redactions(images=fitz.PDF_REDACT_IMAGE_REMOVE)
+
+        # Save with cleanup to purge removed content
+        doc.save(output_path, garbage=4, deflate=True, clean=True)
+    return output_path
