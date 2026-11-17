@@ -1,0 +1,16 @@
+.venv/
+.temp_workspace/
+.uvicorn.log
+.uvicorn.pid
+cloudflared.exe
+Caddyfile
+docker-compose.override.yml
+.env
+.env.*
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.DS_Store
+Thumbs.db
