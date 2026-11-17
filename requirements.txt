@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+python-multipart
+PyMuPDF
+Pillow
+pdf2docx
+docx2pdf
+jinja2
