@@ -134,3 +134,19 @@ def add_watermark(file_path, text, output_path):
             rect = page.rect
             # Centered text box; rotate for diagonal watermark
             fontsize = max(24, min(rect.width, rect.height) / 8)
+            # Use a large textbox to keep text centered after rotation
+            box = fitz.Rect(-rect.width, rect.height * 0.25, rect.width * 2, rect.height * 0.75)
+            page.insert_textbox(
+                box,
+                text,
+                fontsize=fontsize,
+                fontname="helv",
+                color=(0.6, 0.6, 0.6),
+                fill_opacity=0.18,
+                stroke_opacity=0.18,
+                align=fitz.TEXT_ALIGN_CENTER,
+                rotate=45,
+                overlay=True,
+            )
+        doc.save(output_path)
+    return output_path
