@@ -148,3 +148,43 @@ h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
   font-weight: 700;
   box-shadow: 1px 1px 0 #111;
 }
+.icon-btn:hover { background: #ddd; }
+
+.options { display: grid; gap: 0.6rem; margin: 0.75rem 0; }
+.field { display: grid; gap: 0.25rem; }
+.field.inline { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.6rem; }
+label { font-weight: 700; font-size: 0.9rem; }
+input[type="text"], input[type="number"], input[type="password"], select {
+  width: 100%;
+  padding: 0.5rem 0.55rem;
+  border: var(--border);
+  background: #fff;
+  font-size: 0.95rem;
+  color: var(--ink);
+  border-radius: 0;
+}
+input:focus, select:focus, button:focus { outline: 3px solid var(--sky); outline-offset: 1px; }
+
+.actions { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.75rem; }
+.btn {
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0.55rem 0.9rem;
+  font-weight: 800;
+  cursor: pointer;
+  background: var(--gray);
+  color: var(--ink);
+}
+.btn.primary { background: var(--yellow); }
+.btn.mint { background: var(--mint); }
+.btn.coral { background: var(--coral); }
+.btn.sky { background: var(--sky); }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+
+.loading {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+  margin-top: 0.5rem;
+}
