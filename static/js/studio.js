@@ -58,3 +58,63 @@
       options: () => `
         <div class="field">
           <label for="target_kb">Target size (KB)</label>
+          <input type="number" id="target_kb" min="1" step="1" placeholder="e.g. 1500" />
+        </div>`
+    },
+    'redact': {
+      title: 'True Redact',
+      desc: 'Draw boxes to permanently remove underlying text and image data.',
+      accept: '.pdf,application/pdf',
+      multiple: false,
+      minFiles: 1,
+      action: { label: 'Permanently Redact & Download', endpoint: '/api/redact/apply' },
+      options: () => ''
+    },
+    'convert-pdf-word': {
+      title: 'PDF ↔ Word',
+      desc: 'Convert PDF to DOCX, or DOCX to PDF (Word to PDF requires Microsoft Word on Windows).',
+      accept: '.pdf,.docx,application/pdf,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      multiple: false,
+      minFiles: 1,
+      action: null, // dynamic
+      options: () => `
+        <div class="field">
+          <label for="convert_mode">Conversion</label>
+          <select id="convert_mode">
+            <option value="pdf-to-word">PDF → Word (.docx)</option>
+            <option value="word-to-pdf">Word (.docx) → PDF (Windows)</option>
+          </select>
+        </div>`
+    },
+    'convert-pdf-images': {
+      title: 'PDF ↔ Images',
+      desc: 'Export PDF pages as images, or bundle images into a single PDF.',
+      accept: '.pdf,.png,.jpg,.jpeg,image/png,image/jpeg,application/pdf',
+      multiple: true,
+      reorder: true,
+      minFiles: 1,
+      action: null, // dynamic
+      options: () => `
+        <div class="field inline">
+          <div class="field">
+            <label for="img_mode">Mode</label>
+            <select id="img_mode">
+              <option value="pdf-to-images">PDF → Images (ZIP)</option>
+              <option value="images-to-pdf">Images → PDF</option>
+            </select>
+          </div>
+          <div class="field" id="img_fmt_wrap">
+            <label for="img_fmt">Image format</label>
+            <select id="img_fmt">
+              <option value="png">PNG</option>
+              <option value="jpg">JPG</option>
+            </select>
+          </div>
+          <div class="field" id="img_dpi_wrap">
+            <label for="img_dpi">DPI</label>
+            <input type="number" id="img_dpi" value="150" min="36" max="600" step="1" />
+          </div>
+        </div>`
+    },
+    'protect-unlock': {
+      title: 'Protect / Unlock',
