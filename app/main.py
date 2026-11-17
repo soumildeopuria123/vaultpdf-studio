@@ -128,3 +128,48 @@ async def api_redact_preview(file: UploadFile = File(...), page: int = Form(0)):
         from app.utils.file_manager import cleanup_workspace
 
         cleanup_workspace(workspace)
+        return HTMLResponse(content=png_bytes, media_type="image/png")
+    except Exception:
+        from app.utils.file_manager import cleanup_workspace
+
+        cleanup_workspace(workspace)
+        raise
+
+
+@app.post("/api/redact/apply")
+async def api_redact_apply(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    boxes: str = Form(...),
+):
+    workspace = create_workspace()
+    try:
+        try:
+            boxes_payload = json.loads(boxes)
+        except json.JSONDecodeError:
+            raise ValueError("Invalid redaction boxes payload (must be JSON).")
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}_redacted.pdf"
+        redactor.redact_regions(input_path, output, boxes_payload)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}_redacted.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/convert/pdf-to-word")
+async def api_pdf_to_word(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    workspace = create_workspace()
+    try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}.docx"
+        converters.pdf_to_word(input_path, output)
+        schedule_cleanup(background_tasks, workspace)
