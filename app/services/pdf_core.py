@@ -116,3 +116,21 @@ def unlock_pdf(file_path, password, output_path):
     with fitz.open(file_path) as doc:
         if doc.needs_pass:
             if not password:
+                raise ValueError("This PDF is encrypted. A password is required.")
+            ok = doc.authenticate(password)
+            if not ok:
+                raise ValueError("Incorrect password for encrypted PDF.")
+        # Save without encryption
+        doc.save(output_path, encryption=fitz.PDF_ENCRYPT_NONE)
+    return output_path
+
+
+def add_watermark(file_path, text, output_path):
+    """Add diagonal semi-transparent watermark text across all pages."""
+    if not text or not text.strip():
+        raise ValueError("Watermark text cannot be empty.")
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            rect = page.rect
+            # Centered text box; rotate for diagonal watermark
+            fontsize = max(24, min(rect.width, rect.height) / 8)
