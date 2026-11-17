@@ -53,3 +53,43 @@ async def api_merge(background_tasks: BackgroundTasks, files: List[UploadFile] =
             media_type="application/pdf",
             background=background_tasks,
         )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/split")
+async def api_split(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    ranges: str = Form(...),
+):
+    workspace = create_workspace()
+    try:
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / "split_pages.zip"
+        pdf_core.split_pdf(input_path, ranges, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename="split_pages.zip",
+            media_type="application/zip",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/compress")
+async def api_compress(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    target_kb: float = Form(...),
+):
+    workspace = create_workspace()
+    try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}_compressed.pdf"
+        original_size, final_size, target_met = compressor.compress_to_target(
