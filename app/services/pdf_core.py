@@ -80,3 +80,25 @@ def split_pdf(file_path, page_ranges, output_zip_path):
 
 def rotate_pdf(file_path, angle, output_path):
     """Rotate all pages by 90, 180, or 270 degrees."""
+    angle = int(angle)
+    if angle not in (90, 180, 270):
+        raise ValueError("Rotation angle must be 90, 180, or 270 degrees.")
+    with fitz.open(file_path) as doc:
+        for page in doc:
+            page.set_rotation((page.rotation + angle) % 360)
+        doc.save(output_path)
+    return output_path
+
+
+def protect_pdf(file_path, password, output_path):
+    """Encrypt PDF with AES-256 using PyMuPDF."""
+    if not password:
+        raise ValueError("Password is required for encryption.")
+    with fitz.open(file_path) as doc:
+        perm = int(
+            fitz.PDF_PERM_ACCESSIBILITY
+            | fitz.PDF_PERM_PRINT
+            | fitz.PDF_PERM_COPY
+            | fitz.PDF_PERM_ANNOTATE
+        )
+        doc.save(
