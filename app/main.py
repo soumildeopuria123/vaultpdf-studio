@@ -173,3 +173,43 @@ async def api_pdf_to_word(background_tasks: BackgroundTasks, file: UploadFile = 
         output = workspace / f"{stem}.docx"
         converters.pdf_to_word(input_path, output)
         schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}.docx",
+            media_type="application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/convert/word-to-pdf")
+async def api_word_to_pdf(background_tasks: BackgroundTasks, file: UploadFile = File(...)):
+    workspace = create_workspace()
+    try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.docx"))
+        output = workspace / f"{stem}.pdf"
+        converters.word_to_pdf(input_path, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/convert/pdf-to-images")
+async def api_pdf_to_images(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    fmt: str = Form("png"),
+    dpi: int = Form(150),
+):
+    workspace = create_workspace()
+    try:
