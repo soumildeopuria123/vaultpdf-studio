@@ -268,3 +268,73 @@
     if (state.tool === 'convert-pdf-images') label = 'Convert & Download';
     if (state.tool === 'protect-unlock') label = 'Process & Download';
     if (state.tool === 'rotate-watermark') label = 'Apply & Download';
+    actionsEl.innerHTML = `<button class="btn primary" id="run-btn" type="button">${label}</button>`;
+    $('#run-btn').addEventListener('click', onRun);
+  }
+
+  function renderFileList() {
+    fileListEl.innerHTML = '';
+    const cfg = TOOLS[state.tool];
+    state.files.forEach((f, idx) => {
+      const li = document.createElement('li');
+      li.className = 'file-item';
+      const left = document.createElement('div');
+      left.innerHTML = `<div class="name">${escapeHtml(f.name)}</div><div class="meta">${formatBytes(f.size)}</div>`;
+      const actions = document.createElement('div');
+      actions.className = 'file-actions';
+      if (cfg.reorder && state.files.length > 1) {
+        const up = document.createElement('button');
+        up.type = 'button'; up.className = 'icon-btn'; up.textContent = '↑';
+        up.title = 'Move up';
+        up.disabled = idx === 0;
+        up.addEventListener('click', () => { moveFile(idx, -1); });
+        const down = document.createElement('button');
+        down.type = 'button'; down.className = 'icon-btn'; down.textContent = '↓';
+        down.title = 'Move down';
+        down.disabled = idx === state.files.length - 1;
+        down.addEventListener('click', () => { moveFile(idx, 1); });
+        actions.appendChild(up); actions.appendChild(down);
+      }
+      const rm = document.createElement('button');
+      rm.type = 'button'; rm.className = 'icon-btn'; rm.textContent = '✕';
+      rm.title = 'Remove';
+      rm.addEventListener('click', () => { removeFile(idx); });
+      actions.appendChild(rm);
+      li.appendChild(left); li.appendChild(actions);
+      fileListEl.appendChild(li);
+    });
+  }
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c]));
+  }
+
+  function moveFile(idx, delta) {
+    const j = idx + delta;
+    if (j < 0 || j >= state.files.length) return;
+    const arr = state.files.slice();
+    const [item] = arr.splice(idx, 1);
+    arr.splice(j, 0, item);
+    state.files = arr;
+    renderFileList();
+  }
+
+  function removeFile(idx) {
+    state.files.splice(idx, 1);
+    renderFileList();
+    if (state.tool === 'redact') {
+      initRedactIfNeeded();
+    }
+  }
+
+  function setFiles(fileList) {
+    const cfg = TOOLS[state.tool];
+    let files = Array.from(fileList || []);
+    if (!cfg.multiple) files = files.slice(0, 1);
+    if (cfg.multiple && (state.tool === 'merge' || state.tool === 'convert-pdf-images')) {
+      // append for reorderable multi-file tools if adding
+      // but here setFiles replaces; caller decides
+    }
+    state.files = files;
+    renderFileList();
+    if (state.tool === 'redact') initRedactIfNeeded();
