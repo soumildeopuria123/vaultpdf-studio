@@ -338,3 +338,83 @@
     state.files = files;
     renderFileList();
     if (state.tool === 'redact') initRedactIfNeeded();
+  }
+
+  function addFiles(fileList) {
+    const cfg = TOOLS[state.tool];
+    let files = Array.from(fileList || []);
+    if (!cfg.multiple) {
+      state.files = files.slice(0, 1);
+    } else {
+      state.files = state.files.concat(files);
+    }
+    renderFileList();
+    if (state.tool === 'redact') initRedactIfNeeded();
+  }
+
+  async function initRedactIfNeeded() {
+    if (state.tool !== 'redact') return;
+    if (!state.redact) {
+      state.redact = new window.RedactorCanvas(redactCanvasEl, redactPageInfo);
+    }
+    if (state.files.length === 1) {
+      try {
+        setLoading(true, 'Rendering PDF preview…');
+        await state.redact.setPdfFile(state.files[0]);
+        setBanner('', '');
+      } catch (e) {
+        setBanner('error', e.message || 'Failed to load PDF for redaction.');
+        state.redact.reset();
+      } finally {
+        setLoading(false);
+      }
+    } else {
+      state.redact.reset();
+    }
+  }
+
+  async function onRun() {
+    setBanner('', '');
+    const cfg = TOOLS[state.tool];
+    try {
+      if (!state.files.length) throw new Error('Please select a file first.');
+      if (cfg.minFiles && state.files.length < cfg.minFiles) {
+        throw new Error(`Please select at least ${cfg.minFiles} file(s).`);
+      }
+      let endpoint = cfg.action ? cfg.action.endpoint : null;
+      const fd = new FormData();
+
+      if (state.tool === 'merge') {
+        state.files.forEach(f => fd.append('files', f));
+      } else if (state.tool === 'split') {
+        const ranges = $('#ranges').value.trim();
+        if (!ranges) throw new Error('Please enter page ranges (e.g. 1-3, 5).');
+        fd.append('file', state.files[0]);
+        fd.append('ranges', ranges);
+      } else if (state.tool === 'compress') {
+        const kb = parseFloat($('#target_kb').value);
+        if (!kb || kb <= 0) throw new Error('Please enter a valid target size in KB.');
+        fd.append('file', state.files[0]);
+        fd.append('target_kb', String(kb));
+      } else if (state.tool === 'redact') {
+        if (!state.redact || !state.redact.pdfFile) throw new Error('Please load a PDF first.');
+        const boxes = state.redact.getBoxes();
+        if (!boxes.length) throw new Error('Please draw at least one redaction box before applying.');
+        fd.append('file', state.files[0]);
+        fd.append('boxes', JSON.stringify(boxes));
+      } else if (state.tool === 'convert-pdf-word') {
+        const mode = $('#convert_mode').value;
+        const f = state.files[0];
+        if (mode === 'pdf-to-word') {
+          if (!/\.pdf$/i.test(f.name)) throw new Error('Please select a PDF file for PDF → Word.');
+          endpoint = '/api/convert/pdf-to-word';
+        } else {
+          if (!/\.docx$/i.test(f.name)) throw new Error('Please select a .docx file for Word → PDF.');
+          endpoint = '/api/convert/word-to-pdf';
+        }
+        fd.append('file', f);
+      } else if (state.tool === 'convert-pdf-images') {
+        const mode = $('#img_mode').value;
+        if (mode === 'pdf-to-images') {
+          if (!/\.pdf$/i.test(state.files[0].name)) throw new Error('Please select a PDF file.');
+          endpoint = '/api/convert/pdf-to-images';
