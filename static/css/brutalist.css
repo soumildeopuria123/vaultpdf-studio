@@ -38,3 +38,58 @@ h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
   background: var(--card);
 }
 .header-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+.badge {
+  display: inline-block;
+  background: var(--yellow);
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0.35rem 0.6rem;
+  font-weight: 700;
+  font-size: 0.85rem;
+  width: fit-content;
+}
+.subtitle { margin: 0 0 0.5rem; max-width: 800px; }
+
+.panel {
+  background: var(--card);
+  border: var(--border);
+  box-shadow: var(--shadow);
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.tool-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 0.75rem;
+}
+.tool-card {
+  appearance: none;
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0.9rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--ink);
+  transition: transform 0.05s ease;
+  min-height: 92px;
+}
+.tool-card:hover { transform: translate(-1px, -1px); }
+.tool-card.active { outline: 3px solid var(--ink); outline-offset: 1px; }
+.tool-card .tool-title { display: block; font-weight: 800; font-size: 1rem; margin-bottom: 0.25rem; }
+.tool-card .tool-desc { font-size: 0.85rem; }
+.tool-card[data-color="yellow"] { background: var(--yellow); }
+.tool-card[data-color="mint"] { background: var(--mint); }
+.tool-card[data-color="coral"] { background: var(--coral); }
+.tool-card[data-color="sky"] { background: var(--sky); }
+
+.workspace-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
