@@ -213,3 +213,48 @@ async def api_pdf_to_images(
 ):
     workspace = create_workspace()
     try:
+        stem = Path(file.filename or "document").stem
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        output = workspace / f"{stem}_images.zip"
+        converters.pdf_to_images_zip(input_path, output, fmt=fmt, dpi=dpi)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}_images.zip",
+            media_type="application/zip",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/convert/images-to-pdf")
+async def api_images_to_pdf(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...)):
+    workspace = create_workspace()
+    try:
+        if not files:
+            raise ValueError("Please provide at least one image.")
+        paths = save_uploads(files, workspace)
+        output = workspace / "images_combined.pdf"
+        converters.images_to_pdf(paths, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename="images_combined.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/rotate")
+async def api_rotate(
+    background_tasks: BackgroundTasks,
+    file: UploadFile = File(...),
+    angle: int = Form(...),
+):
+    workspace = create_workspace()
+    try:
