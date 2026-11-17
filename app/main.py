@@ -93,3 +93,38 @@ async def api_compress(
         input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
         output = workspace / f"{stem}_compressed.pdf"
         original_size, final_size, target_met = compressor.compress_to_target(
+            input_path, output, target_kb
+        )
+        headers = {
+            "X-Original-Size": str(original_size),
+            "X-Final-Size": str(final_size),
+            "X-Target-Met": "true" if target_met else "false",
+            "Access-Control-Expose-Headers": "X-Original-Size, X-Final-Size, X-Target-Met",
+        }
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename=f"{stem}_compressed.pdf",
+            media_type="application/pdf",
+            headers=headers,
+            background=background_tasks,
+        )
+    except Exception:
+        schedule_cleanup(background_tasks, workspace)
+        raise
+
+
+@app.post("/api/redact/preview")
+async def api_redact_preview(file: UploadFile = File(...), page: int = Form(0)):
+    workspace = create_workspace()
+    try:
+        input_path = save_upload(file, workspace / (file.filename or "input.pdf"))
+        with fitz.open(input_path) as doc:
+            page_count = doc.page_count
+            if page < 0 or page >= page_count:
+                raise ValueError(f"Page out of range. Document has {page_count} pages.")
+        png_bytes = redactor.render_page_preview(input_path, page)
+        # cleanup immediately; preview is stateless per request
+        from app.utils.file_manager import cleanup_workspace
+
+        cleanup_workspace(workspace)
