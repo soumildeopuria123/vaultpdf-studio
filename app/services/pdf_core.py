@@ -102,3 +102,17 @@ def protect_pdf(file_path, password, output_path):
             | fitz.PDF_PERM_ANNOTATE
         )
         doc.save(
+            output_path,
+            encryption=fitz.PDF_ENCRYPT_AES_256,
+            user_pw=password,
+            owner_pw=password,
+            permissions=perm,
+        )
+    return output_path
+
+
+def unlock_pdf(file_path, password, output_path):
+    """Decrypt a password-protected PDF using PyMuPDF."""
+    with fitz.open(file_path) as doc:
+        if doc.needs_pass:
+            if not password:
