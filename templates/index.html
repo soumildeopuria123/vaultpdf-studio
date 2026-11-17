@@ -58,3 +58,49 @@
       <div class="workspace-header">
         <div>
           <h2 id="tool-heading">Merge PDFs</h2>
+          <p id="tool-description">Combine multiple PDFs in the specified order.</p>
+        </div>
+      </div>
+
+      <div id="banner" class="banner hidden"></div>
+
+      <div id="drop-zone" class="drop-zone">
+        <strong id="drop-title">Drag &amp; drop files here</strong>
+        <small id="drop-subtitle">or click to browse</small>
+        <input type="file" id="file-input" class="hidden" />
+      </div>
+
+      <ul id="file-list" class="file-list"></ul>
+      <p id="reorder-hint" class="hint hidden">Tip: Use ↑ ↓ to reorder files before merging or bundling images.</p>
+
+      <div id="options" class="options"></div>
+
+      <div id="redact-area" class="redact-area hidden">
+        <p class="hint"><strong>True Redaction:</strong> Draw rectangles over sensitive content, switch pages as needed, then click "Permanently Redact &amp; Download". Redactions permanently remove underlying text and image data.</p>
+        <div class="redact-toolbar">
+          <button class="btn" id="redact-prev" type="button">◀ Prev Page</button>
+          <span class="mono" id="redact-page-info">Page 0 / 0</span>
+          <button class="btn" id="redact-next" type="button">Next Page ▶</button>
+          <button class="btn coral" id="redact-clear-page" type="button">Clear Page Boxes</button>
+          <button class="btn" id="redact-clear-all" type="button">Clear All Boxes</button>
+        </div>
+        <div class="canvas-wrap">
+          <canvas id="redact-canvas"></canvas>
+        </div>
+      </div>
+
+      <div class="actions" id="actions"></div>
+
+      <div id="loading" class="loading hidden" aria-live="polite">
+        <span class="spinner" aria-hidden="true"></span>
+        <span id="loading-text">Processing locally…</span>
+      </div>
+
+      <p class="footer-note">All processing happens on this machine. Uploaded and processed files are written to a temporary workspace and auto-wiped after download/response.</p>
+    </section>
+  </main>
+
+  <script src="/static/js/redactor_canvas.js"></script>
+  <script src="/static/js/studio.js"></script>
+</body>
+</html>
