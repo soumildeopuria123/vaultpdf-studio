@@ -93,3 +93,58 @@
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
       await new Promise((resolve, reject) => {
+        this.pageImage = new Image();
+        this.pageImage.onload = () => { URL.revokeObjectURL(url); resolve(); };
+        this.pageImage.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Failed to load page image.')); };
+        this.pageImage.src = url;
+      });
+      this.pageIndex = index;
+      this.canvas.width = this.pageImage.naturalWidth;
+      this.canvas.height = this.pageImage.naturalHeight;
+      this.render();
+      this.updateInfo();
+    }
+
+    updateInfo() {
+      if (this.infoEl) {
+        const total = this.pageCount || 0;
+        const current = total ? (this.pageIndex + 1) : 0;
+        this.infoEl.textContent = `Page ${current} / ${total}`;
+      }
+    }
+
+    getMousePos(evt) {
+      const rect = this.canvas.getBoundingClientRect();
+      const scaleX = this.canvas.width / rect.width;
+      const scaleY = this.canvas.height / rect.height;
+      return {
+        x: (evt.clientX - rect.left) * scaleX,
+        y: (evt.clientY - rect.top) * scaleY,
+      };
+    }
+
+    onDown(evt) {
+      if (!this.pdfFile || !this.canvas.width) return;
+      evt.preventDefault();
+      this.drawing = true;
+      this.start = this.getMousePos(evt);
+      this.current = this.start;
+    }
+
+    onMove(evt) {
+      if (!this.drawing) return;
+      this.current = this.getMousePos(evt);
+      this.render();
+      this.drawRect(this.start, this.current, true);
+    }
+
+    onUp(evt) {
+      if (!this.drawing) return;
+      const end = this.current || this.getMousePos(evt);
+      this.drawing = false;
+      const box = this.normalizeBox(this.start, end);
+      this.start = null; this.current = null;
+      if (box) {
+        this.boxes.push({ page: this.pageIndex, ...box });
+      }
+      this.render();
