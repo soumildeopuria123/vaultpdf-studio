@@ -93,3 +93,58 @@ h2 { font-size: 1.1rem; margin: 0 0 0.5rem; }
   align-items: center;
   justify-content: space-between;
   gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.workspace-header p { margin: 0.2rem 0 0; }
+
+.banner {
+  border: var(--border);
+  box-shadow: var(--shadow-sm);
+  padding: 0.6rem 0.75rem;
+  margin: 0.5rem 0 0.75rem;
+  font-weight: 700;
+}
+.banner.hidden { display: none; }
+.banner.info { background: var(--sky); }
+.banner.success { background: var(--mint); }
+.banner.error { background: var(--coral); }
+
+.drop-zone {
+  border: 2px dashed #111;
+  background: #fffef8;
+  padding: 1.25rem;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 0.75rem;
+}
+.drop-zone.dragover { background: #fff3bf; }
+.drop-zone strong { display: block; font-family: "Courier New", Courier, monospace; font-size: 1.05rem; }
+.drop-zone small { color: #333; }
+
+.file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.5rem 0 0.75rem;
+  display: grid;
+  gap: 0.4rem;
+}
+.file-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  border: var(--border);
+  background: #fff;
+  padding: 0.4rem 0.5rem;
+}
+.file-item .name { font-weight: 700; overflow-wrap: anywhere; }
+.file-item .meta { font-size: 0.8rem; color: #333; }
+.file-actions { display: flex; gap: 0.25rem; }
+.icon-btn {
+  border: var(--border);
+  background: var(--gray);
+  cursor: pointer;
+  padding: 0.15rem 0.4rem;
+  font-weight: 700;
+  box-shadow: 1px 1px 0 #111;
+}
