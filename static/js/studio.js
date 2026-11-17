@@ -418,3 +418,83 @@
         if (mode === 'pdf-to-images') {
           if (!/\.pdf$/i.test(state.files[0].name)) throw new Error('Please select a PDF file.');
           endpoint = '/api/convert/pdf-to-images';
+          fd.append('file', state.files[0]);
+          fd.append('fmt', $('#img_fmt').value);
+          fd.append('dpi', $('#img_dpi').value || '150');
+        } else {
+          if (state.files.some(f => !/\.(png|jpe?g)$/i.test(f.name))) throw new Error('Please select only PNG/JPG images.');
+          endpoint = '/api/convert/images-to-pdf';
+          state.files.forEach(f => fd.append('files', f));
+        }
+      } else if (state.tool === 'protect-unlock') {
+        const mode = $('#lock_mode').value;
+        const pw = $('#lock_password').value;
+        if (mode === 'protect' && !pw) throw new Error('Please enter a password to protect the PDF.');
+        endpoint = mode === 'protect' ? '/api/protect' : '/api/unlock';
+        fd.append('file', state.files[0]);
+        fd.append('password', pw);
+      } else if (state.tool === 'rotate-watermark') {
+        const mode = $('#rw_mode').value;
+        if (mode === 'rotate') {
+          endpoint = '/api/rotate';
+          fd.append('file', state.files[0]);
+          fd.append('angle', $('#angle').value);
+        } else {
+          const text = $('#wm_text').value.trim();
+          if (!text) throw new Error('Please enter watermark text.');
+          endpoint = '/api/watermark';
+          fd.append('file', state.files[0]);
+          fd.append('text', text);
+        }
+      }
+
+      if (!endpoint) throw new Error('Unknown action.');
+      setLoading(true, 'Processing locally…');
+      const res = await fetch(endpoint, { method: 'POST', body: fd });
+      if (!res.ok) {
+        let msg = 'Request failed.';
+        try { const j = await res.json(); msg = j.error || j.detail || msg; } catch (_) {}
+        throw new Error(msg);
+      }
+      const blob = await res.blob();
+      const filename = getFilenameFromResponse(res) || 'output';
+      triggerDownload(blob, filename);
+
+      if (state.tool === 'compress') {
+        const orig = res.headers.get('X-Original-Size');
+        const fin = res.headers.get('X-Final-Size');
+        const met = res.headers.get('X-Target-Met') === 'true';
+        const msg = `${formatBytes(orig)} → ${formatBytes(fin)}` + (met ? ' (target met)' : ' (best effort; target not fully met)');
+        setBanner('success', `Compression complete: ${msg}`);
+      } else {
+        setBanner('success', `Done. Downloaded ${filename}. Temporary files auto-wiped.`);
+      }
+    } catch (e) {
+      setBanner('error', e.message || 'An error occurred.');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function getFilenameFromResponse(res) {
+    const cd = res.headers.get('Content-Disposition') || '';
+    const m = /filename\*?=(?:UTF-8''|"?)([^";\n]+)/i.exec(cd);
+    if (m && m[1]) {
+      try { return decodeURIComponent(m[1].replace(/"/g, '').trim()); } catch (_) { return m[1].replace(/"/g, '').trim(); }
+    }
+    return null;
+  }
+
+  function triggerDownload(blob, filename) {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 2000);
+  }
+
+  // Tool selection
+  toolGrid.addEventListener('click', (e) => {
