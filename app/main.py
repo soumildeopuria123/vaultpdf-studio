@@ -28,3 +28,28 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
         if isinstance(exc, HTTPException):
             status = exc.status_code
             detail = exc.detail
+        return JSONResponse(status_code=status, content={"error": detail})
+    raise exc
+
+
+@app.get("/", response_class=HTMLResponse)
+async def index(request: Request):
+    return templates.TemplateResponse(request, "index.html")
+
+
+@app.post("/api/merge")
+async def api_merge(background_tasks: BackgroundTasks, files: List[UploadFile] = File(...)):
+    workspace = create_workspace()
+    try:
+        if not files or len(files) < 2:
+            raise ValueError("Please provide at least two PDF files to merge.")
+        paths = save_uploads(files, workspace)
+        output = workspace / "merged.pdf"
+        pdf_core.merge_pdfs(paths, output)
+        schedule_cleanup(background_tasks, workspace)
+        return FileResponse(
+            path=str(output),
+            filename="merged.pdf",
+            media_type="application/pdf",
+            background=background_tasks,
+        )
