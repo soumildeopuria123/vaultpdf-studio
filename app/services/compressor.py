@@ -98,3 +98,41 @@ def compress_to_target(input_path, output_path, target_kb):
     try:
         _save_doc(doc, output_path)
     finally:
+        doc.close()
+    if output_path.stat().st_size <= target_bytes:
+        final_size = output_path.stat().st_size
+        return original_size, final_size, True
+
+    # Step 2: recompress embedded images at decreasing JPEG quality
+    for quality in (75, 60, 45, 35, 25):
+        doc = fitz.open(input_path)
+        try:
+            _recompress_images(doc, zoom=1.0, jpeg_quality=quality)
+            _save_doc(doc, output_path)
+        finally:
+            doc.close()
+        if output_path.stat().st_size <= target_bytes:
+            final_size = output_path.stat().st_size
+            return original_size, final_size, True
+
+    # Step 3: rasterize & rebuild pages at decreasing DPI/quality (strongest, may affect text selectability)
+    for dpi, quality in ((144, 70), (120, 60), (96, 50), (72, 40), (72, 30)):
+        try:
+            _render_and_rebuild(input_path, output_path, dpi=dpi, jpeg_quality=quality)
+        except Exception:
+            continue
+        if output_path.stat().st_size <= target_bytes:
+            final_size = output_path.stat().st_size
+            return original_size, final_size, True
+
+    # Best effort: keep smallest result we have (output_path currently holds last attempt)
+    final_size = output_path.stat().st_size if output_path.exists() else original_size
+    # If somehow larger than original, fall back to a cleaned copy of original
+    if final_size > original_size:
+        doc = fitz.open(input_path)
+        try:
+            _save_doc(doc, output_path)
+        finally:
+            doc.close()
+        final_size = output_path.stat().st_size
+    return original_size, final_size, final_size <= target_bytes
