@@ -198,3 +198,73 @@
     const digits = b >= 100 || i === 0 ? 0 : b >= 10 ? 1 : 2;
     return `${b.toFixed(digits)} ${units[i]}`;
   }
+
+  function renderTool() {
+    const cfg = TOOLS[state.tool];
+    toolHeading.textContent = cfg.title;
+    toolDescription.textContent = cfg.desc;
+    dropTitle.textContent = cfg.multiple ? 'Drag & drop files here' : 'Drag & drop a file here';
+    dropSubtitle.textContent = 'or click to browse';
+    fileInput.accept = cfg.accept || '';
+    fileInput.multiple = !!cfg.multiple;
+    optionsEl.innerHTML = cfg.options();
+    reorderHint.classList.toggle('hidden', !cfg.reorder);
+    redactArea.classList.toggle('hidden', state.tool !== 'redact');
+    renderActions();
+    renderFileList();
+    bindOptionDynamics();
+  }
+
+  function bindOptionDynamics() {
+    const imgMode = $('#img_mode');
+    if (imgMode) {
+      const sync = () => {
+        const mode = imgMode.value;
+        $('#img_fmt_wrap').classList.toggle('hidden', mode !== 'pdf-to-images');
+        $('#img_dpi_wrap').classList.toggle('hidden', mode !== 'pdf-to-images');
+        // adjust file input for mode
+        if (mode === 'pdf-to-images') {
+          fileInput.multiple = false;
+          fileInput.accept = '.pdf,application/pdf';
+          if (state.files.length > 1) state.files = state.files.slice(0, 1);
+        } else {
+          fileInput.multiple = true;
+          fileInput.accept = '.png,.jpg,.jpeg,image/png,image/jpeg';
+          state.files = state.files.filter(f => /\.(png|jpe?g)$/i.test(f.name));
+        }
+        renderFileList();
+      };
+      imgMode.addEventListener('change', sync);
+      sync();
+    }
+    const convMode = $('#convert_mode');
+    if (convMode) {
+      const sync = () => {
+        const mode = convMode.value;
+        fileInput.multiple = false;
+        fileInput.accept = mode === 'pdf-to-word' ? '.pdf,application/pdf' : '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+        if (state.files.length > 1) state.files = state.files.slice(0, 1);
+        renderFileList();
+      };
+      convMode.addEventListener('change', sync);
+      sync();
+    }
+    const rwMode = $('#rw_mode');
+    if (rwMode) {
+      const sync = () => {
+        const m = rwMode.value;
+        $('#rw_rotate_wrap').classList.toggle('hidden', m !== 'rotate');
+        $('#rw_text_wrap').classList.toggle('hidden', m !== 'watermark');
+      };
+      rwMode.addEventListener('change', sync);
+      sync();
+    }
+  }
+
+  function renderActions() {
+    const cfg = TOOLS[state.tool];
+    let label = cfg.action ? cfg.action.label : 'Run & Download';
+    if (state.tool === 'convert-pdf-word') label = 'Convert & Download';
+    if (state.tool === 'convert-pdf-images') label = 'Convert & Download';
+    if (state.tool === 'protect-unlock') label = 'Process & Download';
+    if (state.tool === 'rotate-watermark') label = 'Apply & Download';
