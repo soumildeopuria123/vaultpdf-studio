@@ -43,3 +43,28 @@ def word_to_pdf(docx_path, pdf_path):
                 "Please install Microsoft Word and try again."
             )
         raise RuntimeError(f"Word to PDF conversion failed: {e}")
+    if not Path(pdf_path).exists():
+        raise RuntimeError(
+            "Word to PDF conversion failed: output file was not created. "
+            "Ensure Microsoft Word is installed and the document is valid."
+        )
+    return pdf_path
+
+
+def pdf_to_images_zip(pdf_path, output_zip_path, fmt="png", dpi=150):
+    """Export all pages as PNG/JPG inside a ZIP file."""
+    fmt = (fmt or "png").lower()
+    if fmt not in ("png", "jpg", "jpeg"):
+        raise ValueError("Image format must be 'png' or 'jpg'.")
+    ext = "jpg" if fmt in ("jpg", "jpeg") else "png"
+    pil_fmt = "JPEG" if ext == "jpg" else "PNG"
+    zoom = max(36, int(dpi)) / 72.0
+    mat = fitz.Matrix(zoom, zoom)
+
+    pdf_path = Path(pdf_path)
+    output_zip_path = Path(output_zip_path)
+    with fitz.open(pdf_path) as doc:
+        with zipfile.ZipFile(output_zip_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+            for i, page in enumerate(doc, start=1):
+                pix = page.get_pixmap(matrix=mat, colorspace=fitz.csRGB, alpha=False)
+                if pil_fmt == "JPEG":
