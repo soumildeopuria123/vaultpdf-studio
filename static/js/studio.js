@@ -118,3 +118,83 @@
     },
     'protect-unlock': {
       title: 'Protect / Unlock',
+      desc: 'Encrypt with AES-256 or decrypt a password-protected PDF.',
+      accept: '.pdf,application/pdf',
+      multiple: false,
+      minFiles: 1,
+      action: null, // dynamic
+      options: () => `
+        <div class="field inline">
+          <div class="field">
+            <label for="lock_mode">Mode</label>
+            <select id="lock_mode">
+              <option value="protect">Protect (Encrypt)</option>
+              <option value="unlock">Unlock (Decrypt)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label for="lock_password">Password</label>
+            <input type="password" id="lock_password" placeholder="Enter password" />
+          </div>
+        </div>`
+    },
+    'rotate-watermark': {
+      title: 'Rotate & Watermark',
+      desc: 'Rotate all pages or add a diagonal semi-transparent watermark.',
+      accept: '.pdf,application/pdf',
+      multiple: false,
+      minFiles: 1,
+      action: null, // dynamic
+      options: () => `
+        <div class="field inline">
+          <div class="field">
+            <label for="rw_mode">Mode</label>
+            <select id="rw_mode">
+              <option value="rotate">Rotate</option>
+              <option value="watermark">Watermark</option>
+            </select>
+          </div>
+          <div class="field" id="rw_rotate_wrap">
+            <label for="angle">Angle</label>
+            <select id="angle">
+              <option value="90">90°</option>
+              <option value="180">180°</option>
+              <option value="270">270°</option>
+            </select>
+          </div>
+          <div class="field hidden" id="rw_text_wrap">
+            <label for="wm_text">Watermark text</label>
+            <input type="text" id="wm_text" placeholder="e.g. CONFIDENTIAL" />
+          </div>
+        </div>`
+    }
+  };
+
+  function setBanner(type, msg) {
+    if (!msg) {
+      banner.className = 'banner hidden';
+      banner.textContent = '';
+      return;
+    }
+    banner.className = `banner ${type}`;
+    banner.textContent = msg;
+  }
+
+  function setLoading(on, text) {
+    if (on) {
+      loading.classList.remove('hidden');
+      loadingText.textContent = text || 'Processing locally…';
+    } else {
+      loading.classList.add('hidden');
+    }
+  }
+
+  function formatBytes(bytes) {
+    if (bytes == null || isNaN(bytes)) return '?';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    let b = Number(bytes);
+    let i = 0;
+    while (b >= 1024 && i < units.length - 1) { b /= 1024; i++; }
+    const digits = b >= 100 || i === 0 ? 0 : b >= 10 ? 1 : 2;
+    return `${b.toFixed(digits)} ${units[i]}`;
+  }
