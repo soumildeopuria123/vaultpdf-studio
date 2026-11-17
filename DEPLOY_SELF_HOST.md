@@ -58,3 +58,87 @@ nano Caddyfile   # replace pdf.example.com with your real domain
 
 `Caddyfile` should contain your domain, e.g.:
 ```caddy
+pdf.yourdomain.com {
+    encode gzip zstd
+    reverse_proxy app:8000
+}
+```
+
+> Caddy automatically obtains and renews TLS certificates from Let's Encrypt. This requires the domain to resolve to this server and ports 80/443 to be reachable.
+
+## 4. Build and start
+
+```bash
+docker compose up -d --build
+```
+
+Check status and logs:
+```bash
+docker compose ps
+docker compose logs -f app
+docker compose logs -f caddy
+```
+
+Once Caddy has issued a certificate, your permanent link will be:
+- `https://pdf.yourdomain.com` (your configured domain)
+
+## 5. Verify
+
+- Open `https://your-domain` in a browser — you should see VaultPDF Studio.
+- Test a simple operation (e.g. merge or rotate) to confirm uploads/processing/downloads work through the proxy.
+- Temp files are written to `.temp_workspace/` inside the container and auto-cleaned after each response.
+
+## 6. Updates
+
+After changing code:
+```bash
+git pull   # if using git
+docker compose up -d --build
+```
+
+## 7. Firewall (if enabled)
+
+Example with UFW:
+```bash
+sudo ufw allow OpenSSH
+sudo ufw allow 80/tcp
+sudo ufw allow 443/tcp
+sudo ufw enable
+```
+
+## Alternative: without Docker (systemd + venv + Caddy/Nginx)
+
+1. Install Python 3.10+ and Caddy (or Nginx + Certbot) on the server.
+2. Create a venv and install deps: `python3 -m venv .venv && .venv/bin/pip install -r requirements.txt`
+3. Run with a process manager. Example systemd unit (`/etc/systemd/system/vaultpdf.service`):
+   ```ini
+   [Unit]
+   Description=VaultPDF Studio
+   After=network.target
+
+   [Service]
+   Type=simple
+   User=www-data
+   WorkingDirectory=/opt/vaultpdf
+   ExecStart=/opt/vaultpdf/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000
+   Restart=always
+   RestartSec=5
+
+   [Install]
+   WantedBy=multi-user.target
+   ```
+   Then: `sudo systemctl daemon-reload && sudo systemctl enable --now vaultpdf`
+4. Configure Caddy/Nginx to reverse proxy `https://your-domain` → `127.0.0.1:8000` and enable TLS.
+
+## Privacy & exposure note
+
+This app is designed for local/offline processing. When you self-host it publicly:
+- Anyone with the URL can access it unless you add authentication (not included by default). Consider restricting access (basic auth in Caddy, VPN/Tailscale, IP allowlist, or SSO) if it should not be public.
+- Uploaded files are processed on your server and auto-deleted after responses, but traffic and handling occur on that infrastructure. Share the link only with intended users and use HTTPS.
+
+## Troubleshooting
+
+- **Certificate not issued:** confirm DNS points to the server, ports 80/443 are open, and no other service is using them (`docker compose logs caddy`).
+- **502 Bad Gateway:** app container not ready or crashed (`docker compose logs app`).
+- **Large PDFs/timeouts:** reverse proxies may have upload/body/time limits; Caddy defaults are generally permissive, but adjust if needed.
+- **Word → PDF fails on Linux:** expected without Microsoft Word; use PDF→Word or run that feature on a Windows host.
