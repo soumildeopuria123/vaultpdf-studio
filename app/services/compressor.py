@@ -76,3 +76,25 @@ def _render_and_rebuild(input_path: Path, output_path: Path, dpi: int, jpeg_qual
         _save_doc(out, output_path)
     finally:
         out.close()
+        src.close()
+
+
+def compress_to_target(input_path, output_path, target_kb):
+    """Iteratively compress a PDF until <= target_kb*1024 bytes or best effort.
+
+    Returns (original_size, final_size, target_met).
+    """
+    input_path = Path(input_path)
+    output_path = Path(output_path)
+    target_bytes = int(float(target_kb) * 1024)
+    if target_bytes <= 0:
+        raise ValueError("Target size must be greater than 0 KB.")
+
+    original_size = input_path.stat().st_size
+
+    # Try progressive strategies: in-place image recompress, then rasterize-rebuild at lower DPI/quality.
+    # Step 1: lossless-ish cleanup
+    doc = fitz.open(input_path)
+    try:
+        _save_doc(doc, output_path)
+    finally:
